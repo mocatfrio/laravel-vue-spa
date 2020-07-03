@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import BookableListItem from "./BookableListItem.vue";
+import BookableListItem from "./BookableListItem";
 
 export default {
   components: {
