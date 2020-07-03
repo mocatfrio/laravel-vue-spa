@@ -9,7 +9,7 @@
       <div class="row pt-4">
         <div class="col-md-6">Hafara Firdausi</div>
         <div class="col-md-6 d-flex justify-content-end">
-          <star-rating :rating="review.rating" class="fa-md"></star-rating>
+          <star-rating :value="review.rating" class="fa-md"></star-rating>
         </div>
       </div>
       <div class="row">
