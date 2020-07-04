@@ -1,18 +1,17 @@
 <template>
 <div>
-  <div class="row" v-if="error">
-    Unknown error has occured, please try again later:(
-  </div>
-  <div class="row" v-else>
+  <success v-if="success">
+    You've left a review, thank you very much!
+  </success>
+  <fatal-error v-if="error"></fatal-error>
+  <div class="row" v-if="!success && !error">
     <div :class="[{'col-md-4': twoColumns}, {'d-none': oneColumn}]">
-      <div class="card">
+      <div v-if="loading">Loading...</div>
+      <div v-if="hasBooking" class="card">
         <div class="card-body">
-          <div v-if="loading">Loading...</div>
-          <div v-if="hasBooking">
-            <p>Stayed at <router-link :to="{name: 'bookable', params: {id: booking.bookable.bookable_id} }">{{ booking.bookable.title }}</router-link>
+          <p>Stayed at <router-link :to="{name: 'bookable', params: {id: booking.bookable.bookable_id} }">{{ booking.bookable.title }}</router-link>
             </p>
             <p>From {{ booking.from }} to {{ booking.to }}</p>
-          </div>
         </div>
       </div>
     </div>
@@ -31,9 +30,10 @@
           </div>
           <div class="form-group">
             <label for="content" class="text-muted">Describe your experience with</label>
-            <textarea name="content" id="" cols="30" rows="10" class="form-control" v-model="review.content"></textarea>
+            <textarea name="content" id="" cols="30" rows="10" class="form-control" v-model="review.content" :class="[{'is-invalid': errorFor('content')}]"></textarea>
+            <v-errors :errors="errorFor('content')"></v-errors>
           </div>
-          <button class="btn btn-lg btn-primary btn-block" @click.prevent="submit" :disabled="loading">Submit</button>
+          <button class="btn btn-lg btn-primary btn-block" @click.prevent="submit" :disabled="sending">Submit</button>
         </div>
       </div>
     </div>
@@ -44,13 +44,15 @@
 
 <script>
 import {
-  is404
+  is404,
+  is422
 } from './../shared/utils/response';
+import validationErrors from './../shared/mixins/validationErrors';
 
 export default {
+  mixins: [validationErrors],
   data() {
     return {
-      loading: false,
       review: {
         id: null,
         rating: 5,
@@ -58,30 +60,31 @@ export default {
       },
       existingReview: null,
       booking: null,
-      error: false
+      error: false,
+      success: false,
+      loading: false,
+      sending: false
     }
   },
-  created() {
-    this.review.id = this.$route.params.id
-    this.loading = true
-    // check if review already exist
-    axios.get(`/api/reviews/${this.review.id}`)
-      .then((response) => {
-        this.existingReview = response.data.data;
-      })
-      .catch((err) => {
-        if (is404(err)) {
-          return axios.get(`/api/booking-by-review/${this.review.id}`).then((response) => {
-            this.booking = response.data.data;
-          }).catch((err) => {
-            this.error = !is404(err);
-          });
+  async created() {
+    this.review.id = this.$route.params.id;
+    this.loading = true;
+
+    try {
+      this.existingReview = (await axios.get(`/api/reviews/${this.review.id}`)).data.data;
+    } catch (err) {
+      if (is404(err)) {
+        try {
+          this.booking =  (await axios.get(`/api/booking-by-review/${this.review.id}`)).data.data;
+        } catch (err) {
+          this.error = !is404(err);
         }
+      } else {
         this.error = true;
-      })
-      .then((response) => {
-        this.loading = false
-      });
+      }
+    }
+
+    this.loading = false;
   },
   computed: {
     alreadyReviewed() {
@@ -102,16 +105,27 @@ export default {
   },
   methods: {
     submit() {
-      this.loading = true;
+      this.sending = true;
+      this.errors = null;
+      this.success = false
+
       axios.post(`/api/reviews`, this.review)
       .then((response) => {
-        console.log(response);
+        this.success = 201 === response.status;
       }).catch((err) => {
+        if (is422(err)) {
+          const errors = err.response.data.errors;
+
+          if (errors['content'] && 1 === _.size(errors)) {
+            this.errors = errors;
+            return;
+          }
+        }
         this.error = true;
       }).then(() => {
-        this.loading = false;
+        this.sending = false;
       });
-    }
+    },
   }
 }
 </script>

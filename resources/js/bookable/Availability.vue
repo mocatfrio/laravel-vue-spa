@@ -13,12 +13,12 @@
     <div class="form-group col-md-6">
       <label class="from">From</label>
       <input type="text" name="from" class="form-control form-control-sm" placeholder="Start date" v-model="from" @keyup.enter="check" :class="[{'is-invalid': this.errorFor('from')}]">
-      <div class="invalid-feedback" v-for="(error, index) in this.errorFor('from')" :key="'from' + index">{{ error }}</div>
+      <v-errors :errors="errorFor('from')"></v-errors>
     </div>
     <div class="form-group col-md-6">
       <label class="to">To</label>
       <input type="text" name="to" class="form-control form-control-sm" placeholder="End date" v-model="to" @keyup.enter="check" :class="[{'is-invalid': this.errorFor('to')}]">
-      <div class="invalid-feedback" v-for="(error, index) in this.errorFor('to')" :key="'to' + index">{{ error }}</div>
+      <v-errors :errors="errorFor('to')"></v-errors>
     </div>
   </div>
   <button class="btn btn-secondary btn-block" @click="check" :disabled="loading">Check!</button>
@@ -26,7 +26,13 @@
 </template>
 
 <script>
+import {
+  is422
+} from './../shared/utils/response';
+import validationErrors from './../shared/mixins/validationErrors';
+
 export default {
+  mixins: [validationErrors],
   props: {
     bookableId: String
   },
@@ -36,7 +42,6 @@ export default {
       to: null,
       loading: false,
       status: null,
-      errors: null
     }
   },
   methods: {
@@ -48,16 +53,13 @@ export default {
         .then(response => {
           this.status = response.status;
         }).catch(error => {
-          if (422 === error.response.status) {
+          if (is422(error)) {
             this.errors = error.response.data.errors;
           }
           this.status = error.response.status;
         }).then(() => {
           this.loading = false;
         });
-    },
-    errorFor(field) {
-      return this.hasError && this.errors[field] ? this.errors[field] : null;
     }
   },
   computed: {
@@ -84,7 +86,6 @@ label {
 
 .is-invalid {
   border-color: #B22222;
-  /* background-image: none; */
 }
 
 .invalid-feedback {
