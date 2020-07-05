@@ -9,10 +9,10 @@
             <article> {{ bookable.description }} </article>
           </div>
         </div>
-        <review-list :bookable-id="this.$route.params.id.toString()"></review-list>
+        <review-list :bookable-id="this.$route.params.id"></review-list>
       </div>
       <div class="col-md-4 pb-4">
-        <availability :bookable-id="this.$route.params.id.toString()"></availability>
+        <availability :bookable-id="this.$route.params.id"></availability>
       </div>
     </div>
     <div v-else>
