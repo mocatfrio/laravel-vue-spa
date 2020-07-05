@@ -1,43 +1,55 @@
 <template>
-  <div>
-    <div class="row" v-if="!loading">
-      <div class="col-md-8 pb-4">
-        <div class="card">
-          <div class="card-body">
-            <h2> {{ bookable.title }} </h2>
-            <hr>
-            <article> {{ bookable.description }} </article>
-          </div>
+<div>
+  <div class="row" v-if="!loading">
+    <div class="col-md-8 pb-4">
+      <div class="card">
+        <div class="card-body">
+          <h2> {{ bookable.title }} </h2>
+          <hr>
+          <article> {{ bookable.description }} </article>
         </div>
-        <review-list :bookable-id="this.$route.params.id"></review-list>
       </div>
-      <div class="col-md-4 pb-4">
-        <availability :bookable-id="this.$route.params.id"></availability>
-      </div>
+      <review-list :bookable-id="this.$route.params.id"></review-list>
     </div>
-    <div v-else>
-      <div class="row">
-        <div class="col-12">
-          Loading...
-        </div>
+    <div class="col-md-4 pb-4">
+      <availability :bookable-id="this.$route.params.id" @availability="checkPrice($event)" class="mb-4 mt-3"></availability>
+      <transition name="fade">
+        <price-breakdown v-if="price" :price="price" class="mb-4"></price-breakdown>
+      </transition>
+      <transition name="fade">
+        <button class="btn btn-outline-secondary btn-block" v-if="price">Book Now</button>
+      </transition>
+    </div>
+  </div>
+  <div v-else>
+    <div class="row">
+      <div class="col-12">
+        Loading...
       </div>
     </div>
   </div>
+</div>
 </template>
 
 <script>
 import Availability from "./Availability";
 import ReviewList from "./ReviewList";
+import PriceBreakdown from "./PriceBreakdown";
+import {
+  mapState
+} from "vuex";
 
 export default {
   components: {
     Availability,
-    ReviewList
+    ReviewList,
+    PriceBreakdown
   },
   data() {
     return {
       bookable: null,
-      loading: false
+      loading: false,
+      price: null
     };
   },
   created() {
@@ -46,6 +58,23 @@ export default {
       this.bookable = response.data.data;
       this.loading = false
     }));
+  },
+  computed: mapState({
+    lastSearch: 'lastSearch'
+  }),
+  methods: {
+    async checkPrice(hasAvailability) {
+      if (!hasAvailability) {
+        this.price = null;
+        return;
+      }
+
+      try {
+        this.price = (await axios.get(`/api/bookables/${this.$route.params.id}/price?from=${this.lastSearch.from}&to=${this.lastSearch.to}`)).data.data;
+      } catch (err) {
+        this.price = null;
+      }
+    }
   }
 }
 </script>

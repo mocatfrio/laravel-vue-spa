@@ -2,12 +2,14 @@
 <div>
   <h6 class="text-uppercase text-secondary font-weight-bolder">
     Check Availability
-    <span v-if="noAvailability" class="text-danger">
-      (NOT AVAILABLE)
-    </span>
-    <span v-if="hasAvailability" class="text-success">
-      (AVAILABLE)
-    </span>
+    <transition name="fade">
+      <span v-if="noAvailability" class="text-danger">
+        (NOT AVAILABLE)
+      </span>
+      <span v-if="hasAvailability" class="text-success">
+        (AVAILABLE)
+      </span>
+    </transition>
   </h6>
   <div class="form-row">
     <div class="form-group col-md-6">
@@ -21,7 +23,10 @@
       <v-errors :errors="errorFor('to')"></v-errors>
     </div>
   </div>
-  <button class="btn btn-secondary btn-block" @click="check" :disabled="loading">Check!</button>
+  <button class="btn btn-secondary btn-block" @click="check" :disabled="loading">
+    <span v-if="!loading">Check!</span>
+    <span v-else><i class="fas fa-circle-notch fa-spin"></i>&nbsp;Checking...</span>
+  </button>
 </div>
 </template>
 
@@ -45,7 +50,7 @@ export default {
     }
   },
   methods: {
-    check() {
+    async check() {
       this.loading = true;
       this.errors = null;
 
@@ -54,17 +59,18 @@ export default {
         to: this.to
       });
 
-      axios.get(`/api/bookables/${this.bookableId}/availability?from=${this.from}&to=${this.to}`)
-        .then(response => {
-          this.status = response.status;
-        }).catch(error => {
-          if (is422(error)) {
-            this.errors = error.response.data.errors;
-          }
-          this.status = error.response.status;
-        }).then(() => {
-          this.loading = false;
-        });
+      try {
+        this.status = (await axios.get(`/api/bookables/${this.bookableId}/availability?from=${this.from}&to=${this.to}`)).status;
+        this.$emit("availability", this.hasAvailability);
+      } catch(err) {
+        if (is422(err)) {
+          this.errors = err.response.data.errors;
+        }
+        this.status = err.response.status;
+        this.$emit("availability", this.hasAvailability);
+      }
+
+      this.loading = false;
     }
   },
   computed: {
