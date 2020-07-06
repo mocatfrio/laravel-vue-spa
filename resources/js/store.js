@@ -17,21 +17,52 @@ export default {
       },
       removeFromBasket(state, payload) {
         state.basket.items = state.basket.items.filter(item => item.bookable.id !== payload);
+      },
+      setBasket(state, payload) {
+        state.basket = payload
       }
   },
   actions: {
     setLastSearch(context, payload) {
       context.commit('setLastSearch', payload);
+      // save in local storage
       localStorage.setItem('lastSearch', JSON.stringify(payload));
     },
     loadStoredState(context) {
+      // load stored state every vue app reloaded
       const lastSearch = localStorage.getItem('lastSearch');
       if (lastSearch) {
         context.commit('setLastSearch', JSON.parse(lastSearch));
       }
+
+      const basket = localStorage.getItem('basket');
+      if(basket) {
+        context.commit('setBasket', JSON.parse(basket));
+      }
+    },
+    addToBasket({ commit, state }, payload) {
+      commit('addToBasket', payload);
+      // save in local storage
+      localStorage.setItem('basket', JSON.stringify(state.basket));
+    },
+    removeFromBasket({ commit, state }, payload) {
+      commit('removeFromBasket', payload);
+      // save in local storage
+      localStorage.setItem('basket', JSON.stringify(state.basket));
+    },
+    clearBasket({commit, state}, payload) {
+      commit('setBasket', { items: [] });
+      localStorage.setItem('basket', JSON.stringify(state.basket));
     }
+
   },
   getters: {
-    itemsInBasket: (state) => state.basket.items.length
+    itemsInBasket: (state) => state.basket.items.length,
+    inBasketAlready: (state) => (id) => {
+      return state.basket.items.reduce(
+        (result, item) => result || item.bookable.id === id, 
+        false
+      );
+    }
   }
 }

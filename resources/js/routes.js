@@ -4,6 +4,7 @@ import ExampleComponent from "./components/ExampleComponent";
 import Bookables from "./bookables/Bookables";
 import Bookable from "./bookable/Bookable";
 import Review from "./review/Review";
+import Basket from "./basket/Basket";
 
 const routes = [
   {
@@ -20,6 +21,11 @@ const routes = [
     path: "/review/:id",
     component: Review,
     name: "review"
+  },
+  {
+    path: "/basket",
+    component: Basket,
+    name: "basket"
   }
 ]
 

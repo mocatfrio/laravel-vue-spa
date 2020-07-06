@@ -23,6 +23,7 @@ class BookableAvailabilityController extends Controller
         
         $bookable = Bookable::findOrFail($id);
         return $bookable->availableFor($data['from'], $data['to'])
-            ? response()->json([]) : response()->json([], 404);
+            ? response()->json([]) 
+            : response()->json([], 404);
     }
 }
